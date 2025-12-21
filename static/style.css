@@ -1,4 +1,80 @@
 body {
     margin: 0;
-    overflow: hidden; /* no scroll */
+    overflow: hidden;
+    background-color: #000;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #e0e0e0; 
+    font-size: 15px; 
+}
+
+canvas {
+    display: block;
+    position: absolute;
+    top: 0; left: 0; z-index: 0;
+}
+
+#sidebar {
+    position: absolute;
+    left: 5vh;
+    top: 5vh;
+    width: 40vh;
+    height: 90vh;
+    
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    
+    padding: 25px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    z-index: 10;
+    
+    scrollbar-width: none; 
+}
+
+#sidebar::-webkit-scrollbar {
+    display: none;
+}
+
+h2 {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    color: #fff;
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.simple-text {
+    line-height: 1.6;
+    color: #fff;
+}
+
+/* link style matched to simple text */
+a {
+    color: #fff;
+    text-decoration: underline;
+}
+a:hover {
+    color: #fff;
+}
+
+/* asteroid cards */
+.asteroid-item {
+    margin-bottom: 25px; /* added more space instead */
+}
+
+.asteroid-name {
+    font-weight: bold;
+    font-size: 16px;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+/* danger style: applies to the whole block */
+.danger-block {
+    color: #ff6666 !important; /* light red text for everything */
+}
+/* force title color to inherit the red if dangerous */
+.danger-block .asteroid-name {
+    color: #ff6666 !important;
 }
