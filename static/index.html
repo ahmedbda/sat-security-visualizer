@@ -2,13 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Satellite network simulation</title>
+    <title>Asteroid monitor</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div id="scene-container"></div> <!-- for main.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script> <!-- 3js library (for 3d) -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script> <!-- for interaction-->
+    
+    <div id="sidebar">
+        <h2>Help</h2>
+        <div class="simple-text">
+            Left click to rotate<br>
+            Right click to move<br>
+            Scroll to zoom<br>
+            <a href="https://github.com/ahmedbda/ast-visualizer">Source code</a>
+        </div>
+
+        <h2>Monitoring</h2>
+        <div id="asteroids-list">
+            Scanning data...
+        </div>
+    </div>
+
+    <div id="scene-container"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="/static/main.js"></script>
 </body>
 </html>
