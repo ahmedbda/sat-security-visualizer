@@ -1,14 +1,13 @@
 # NASA asteroid constellation visualizer
 
-A Python Web visualization project using FastAPI to analyze Near-Earth Objects called NEOs with the NASA NeoWs API
+A Python Web visualization project using FastAPI to show NEOs with the NASA NeoWs API
 
 ## Demonstration
-You can find the website [here]()
+You can find the website [here](ast-visualizer.vercel.app)
 
 <p align="center">
 <img src="assets/showcase.gif">
 </p>
-
 
 ## Project goal
 This project connects to the NASA NeoWs (Near Earth Object Web Service) API to retrieve real time data about asteroids passing close to Earth  
@@ -20,12 +19,12 @@ The distances between Earth and these asteroids are massive (millions of km) whi
 
 To make the visualization renderable in a web browser, I implemented a scaling logic
 
-**Distance scaling**
+### Distance scaling
 The 3D scene cannot handle raw values in the millions so I applied down-scaling by dividing the real distance by 100000   
 
 This transforms the astronomical distance to a smaller manageable one in the 3D scene, making all the objects visible
 
-**Object scaling**
+### Object scaling
 An asteroid of 1 kilo-meter diameter at a distance of 1 million kilo-meters would be invisible (smaller than a pixel) so I normalized the sizes and divided them by a factor of 50  
 
 To prevent small rocks from disappearing, if the radius is normalized if it is smaller than 0.5 radius units (with 10 being the Earth's radius)
@@ -53,4 +52,4 @@ Clicking on any asteroid in the 3D view updates a sidebar displaying precise API
 * The name of the object
 * The distance from Earth (for asteroids)
 * The diameter of the object
-* The danger of the object (given by the nasa api or the object type)
+* The danger of the object (given by the NASA API or the object type)
