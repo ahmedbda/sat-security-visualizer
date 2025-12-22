@@ -2,23 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Asteroid monitor</title>
+    <title>Asteroid Monitor</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    
-    <div id="sidebar">
-        <h2>Help</h2>
-        <div class="simple-text">
-            Left click to rotate<br>
-            Right click to move<br>
-            Scroll to zoom<br>
-            <a href="https://github.com/ahmedbda/ast-visualizer">Source code</a>
+
+    <div id="ui-container">
+        <div id="sidebar-status" class="panel">
+            <div class="simple-text">
+                Left click: Rotate<br>
+                Right click: Move<br>
+                Scroll: Zoom<br>
+                <div id="status-content"></div>
+                <a href="https://github.com/ahmedbda/ast-visualizer">Documentation</a>
+            </div>
         </div>
 
-        <h2>Monitoring</h2>
-        <div id="asteroids-list">
-            Scanning data...
+        <div class="panel">
+            Pick a date  <input type="date" id="date-picker">
+        </div>
+
+        <div id="sidebar-info" class="panel">
+            <div id="info-content">
+                <div>Scanning...</div>
+            </div>
         </div>
     </div>
 
