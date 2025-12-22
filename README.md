@@ -1,4 +1,4 @@
-# NASA asteroid constellation visualizer
+# Asteroid constellation visualizer
 
 A Python Web visualization project using FastAPI to show NEOs with the NASA NeoWs API
 
