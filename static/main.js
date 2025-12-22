@@ -1,113 +1,188 @@
-// global variables
-let scene, camera, renderer, earth, controls, stars;
-let asteroids3D = []; 
+// global variables for scene management
+let scene, camera, renderer, earth, controls;
+// array to store asteroid meshes for interaction
+let asteroidsElems = []; 
+// variables for click interaction (raycasting)
+let raycaster, pointer;
+// variable to keep track of the currently selected asteroid or earth
+let currentSelection = null;
 
-// textures (on les charge une seule fois au début)
-let earthTexture, rockTexture;
+// visual scaling constants
+const EARTH_RADIUS = 10;       
+const DISTANCE_SCALE = 100000; 
+const SIZE_SCALE = 50;        
 
+// initialization function
 function init() {
-    // scene
+    // creating the scene
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000); // Noir pur
+    scene.background = new THREE.Color(0x050505); 
 
-    // camera
-    const aspect = window.innerWidth / window.innerHeight;
-    camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
-    camera.position.z = 35; 
+    // setting up the camera
+    const aspect = window.innerWidth / window.innerHeight; // aspect ratio
+    camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 2000); 
+    camera.position.set(40, 20, 140); 
+    camera.lookAt(0, 0, 0); 
 
-    // renderer
+    // setting up the renderer
     renderer = new THREE.WebGLRenderer({ antialias: true }); 
     renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
     document.getElementById('scene-container').appendChild(renderer.domElement);
 
-    // --- CHARGEMENT DES IMAGES (TEXTURES) ---
-    const loader = new THREE.TextureLoader();
-    
-    // 1. Image de la Terre (Wikimedia)
-    earthTexture = loader.load('https://upload.wikimedia.org/wikipedia/commons/9/9d/MODIS_Map.jpg');
-    
-    // 2. Image de Roche pour les astéroïdes (Texture lunaire générique)
-    rockTexture = loader.load('https://upload.wikimedia.org/wikipedia/commons/2/2c/Generic_Celestia_asteroid_texture.jpg');
-
-    // --- CRÉATION DE LA TERRE ---
-    // On utilise MeshBasicMaterial = Pas besoin de lumière, l'image s'affiche brute
-    const geometry = new THREE.SphereGeometry(6, 64, 64); 
+    // creating earth with 15 x 15 wireframe
+    const geometry = new THREE.SphereGeometry(EARTH_RADIUS, 15, 15); 
     const material = new THREE.MeshBasicMaterial({ 
-        map: earthTexture 
+        color: 0x00aaff, // base blue color
+        wireframe: true,
+        transparent: true,
+        opacity: 0.4
     }); 
-
     earth = new THREE.Mesh(geometry, material);
+    // adding a name for click detection logic
+    earth.name = "Earth"; 
     scene.add(earth);
 
-    // décor
-    createStars();
-
-    // controls
+    // setting up orbit controls
     controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.autoRotate = true; 
-    controls.autoRotateSpeed = 0.5;
+    controls.autoRotate = true;       
+    controls.autoRotateSpeed = 0.2; 
+    controls.minDistance = EARTH_RADIUS + 2; 
+    controls.maxDistance = 800;              
+
+    // initializing raycaster
+    raycaster = new THREE.Raycaster();
+    pointer = new THREE.Vector2();
+
+    // adding an event listener for clicking
+    window.addEventListener('click', onMouseClick);
+}
+
+// function to handle clicks
+function onMouseClick(event) {
+    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = - (event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(pointer, camera);
+
+    // check intersection with asteroids AND earth
+    // we create a temporary array including earth to check everything
+    const objectsToCheck = [...asteroidsElems, earth];
+    const intersects = raycaster.intersectObjects(objectsToCheck);
+
+    if (intersects.length > 0) {
+        const selectedObject = intersects[0].object;
+        
+        // reset previous selection color
+        if (currentSelection) {
+            if (currentSelection.name === "Earth") {
+                currentSelection.material.color.setHex(0x00aaff); // back to blue
+            } else {
+                currentSelection.material.color.setHex(0xffffff); // back to white
+            }
+        }
+
+        // apply new color and update info
+        currentSelection = selectedObject;
+
+        if (selectedObject.name === "Earth") {
+            // handle earth selection
+            selectedObject.material.color.setHex(0x00ff66); // green highlight
+            displayEarthInfo();
+        } else {
+            // handle asteroid selection
+            selectedObject.material.color.setHex(0xd1001f); // red highlight
+            displayAsteroidInfo(selectedObject.userData.rawData);
+        }
+    }
+}
+
+// function to display earth info in bottom panel
+function displayEarthInfo() {
+    const infoPanel = document.getElementById('info-content');
+    infoPanel.innerHTML = `
+        <div>
+            <div>Object type: Planet</div>
+            <div>Name: Gaïa (Earth)</div>
+            <div>Size: 12,742 kilo-meters</div>
+            <div>Danger: Habitable</div>
+        </div>
+    `;
+}
+
+// function to display asteroid info in bottom panel
+function displayAsteroidInfo(data) {
+    const infoPanel = document.getElementById('info-content');
+    
+    const name = data.name.replace('(', '').replace(')', '');
+    const size = Math.round(data.estimated_diameter.meters.estimated_diameter_max);
+    const distance = Math.round(data.close_approach_data[0].miss_distance.kilometers);
+    const isHazardous = data.is_potentially_hazardous_asteroid ? "Yes" : "No";
+
+    infoPanel.innerHTML = `
+        <div>
+            <div>Object type: Asteroid</div>
+            <div>Name: ${name}</div>
+            <div>Size: ${size} meters</div>
+            <div>Distance: ${distance.toLocaleString()} kilo-meters</div>
+            <div>Danger: ${isHazardous}</div>
+        </div>
+    `;
 }
 
 function createAsteroid3D(asteroidData) {
-    const realDistance = parseFloat(asteroidData.close_approach_data[0].miss_distance.kilometers);
-    const visualDistance = 14 + (realDistance / 1000000); 
+    const realDistanceKm = parseFloat(asteroidData.close_approach_data[0].miss_distance.kilometers);
+    const visualDistance = EARTH_RADIUS + (realDistanceKm / DISTANCE_SCALE);
 
-    const isDangerous = asteroidData.is_potentially_hazardous_asteroid;
-    
-    // COULEUR :
-    // Si dangereux : On teinte la texture en Rouge (0xffaaaa)
-    // Sinon : On laisse Blanc (0xffffff) pour voir la texture de roche naturelle
-    const tintColor = isDangerous ? 0xff5555 : 0xffffff; 
-    const radius = isDangerous ? 0.6 : 0.3;
+    const realSizeMeters = asteroidData.estimated_diameter.meters.estimated_diameter_max;
+    let visualRadius = (realSizeMeters / SIZE_SCALE) / 2;
+    if (visualRadius < 0.5) visualRadius = 0.5; 
 
-    // FORME : Dodecahedron (Irrégulier, ressemble à un rocher)
-    const geometry = new THREE.DodecahedronGeometry(radius, 0);
-
-    // MATIÈRE : Basic (pas de lumière) + Texture de roche
+    // geometry
+    const geometry = new THREE.IcosahedronGeometry(visualRadius, 0);
     const material = new THREE.MeshBasicMaterial({ 
-        map: rockTexture,  // On plaque l'image de roche
-        color: tintColor   // On applique la teinte (rouge ou normale)
+        color: 0xffffff, 
+        wireframe: true 
     });
-
     const mesh = new THREE.Mesh(geometry, material);
 
-    // Position aléatoire
-    const angle = Math.random() * Math.PI * 2; 
-    const height = (Math.random() - 0.5) * 15; 
+    // random position
+    const theta = Math.random() * Math.PI * 2; 
+    const phi = Math.acos((Math.random() * 2) - 1); 
 
+    mesh.position.x = visualDistance * Math.sin(phi) * Math.cos(theta);
+    mesh.position.y = visualDistance * Math.sin(phi) * Math.sin(theta);
+    mesh.position.z = visualDistance * Math.cos(phi);
+
+    // data
     mesh.userData = { 
         distance: visualDistance,
-        angle: angle,
-        speed: 0.0005 + Math.random() * 0.0005, 
-        height: height,
-        rotSpeedX: (Math.random() - 0.5) * 0.02,
-        rotSpeedZ: (Math.random() - 0.5) * 0.02
+        theta: theta,
+        phi: phi,
+        speed: 0.00002 + Math.random() * 0.00005,
+        rawData: asteroidData 
     };
 
     scene.add(mesh);
-    asteroids3D.push(mesh);
+    asteroidsElems.push(mesh);
 }
 
 function animate() {
     requestAnimationFrame(animate);
     if (controls) controls.update();
 
-    if (stars) stars.rotation.y -= 0.0001;
-
-    asteroids3D.forEach((mesh) => {
+    asteroidsElems.forEach((mesh) => {
         const data = mesh.userData;
-
-        // Orbite
-        data.angle += data.speed; 
-        mesh.position.x = Math.cos(data.angle) * data.distance;
-        mesh.position.z = Math.sin(data.angle) * data.distance;
-        mesh.position.y = data.height;
+        data.theta += data.speed; 
         
-        // Rotation du caillou sur lui-même
-        mesh.rotation.x += data.rotSpeedX;
-        mesh.rotation.z += data.rotSpeedZ;
+        mesh.position.x = data.distance * Math.sin(data.phi) * Math.cos(data.theta);
+        mesh.position.y = data.distance * Math.sin(data.phi) * Math.sin(data.theta);
+        mesh.position.z = data.distance * Math.cos(data.phi);
+        
+        mesh.rotation.x += 0.002;
+        mesh.rotation.y += 0.002;
     });
 
     renderer.render(scene, camera);
@@ -119,74 +194,87 @@ window.addEventListener('resize', () => {
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-function createStars() {
-    const starGeometry = new THREE.BufferGeometry();
-    const starCount = 4000; 
-
-    const positions = new Float32Array(starCount * 3);
-    for(let i = 0; i < starCount * 3; i++) {
-        positions[i] = (Math.random() - 0.5) * 800;
+async function fetchAsteroidData(date = null) { // date is null by default (auto date)
+    const statusPanel = document.getElementById('status-content');
+    const infoPanel = document.getElementById('info-content');
+    
+    // removing selection (needed for date updates)
+    if (currentSelection) {
+        // if it was the earth, remaking it blue (asteroids are unselected automatically)
+        if (currentSelection.name === "Earth") {
+            currentSelection.material.color.setHex(0x00aaff);
+        }
+        // forgetting selection
+        currentSelection = null;
     }
 
-    starGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-    const starMaterial = new THREE.PointsMaterial({
-        color: 0xffffff, 
-        size: 0.5,      
-        transparent: true,
-        opacity: 0.8,
-        sizeAttenuation: true 
-    });
-
-    stars = new THREE.Points(starGeometry, starMaterial);
-    scene.add(stars);
-}
-
-async function fetchAsteroidData() {
-    const list = document.getElementById('asteroids-list');
+    statusPanel.innerHTML = `<div>Scanning...</div>`;
 
     try {
-        const response = await fetch('/asteroids');
+        // building url with the date (auto or selected)
+        let url = '/asteroids';
+        if (date) {
+            url += `?date=${date}`;
+        }
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`http error`);
+
         const data = await response.json();
 
-        list.innerHTML = '';
+        if (!data.near_earth_objects) {
+            statusPanel.innerHTML = `<div>No data found</div>`;
+            return;
+        }
 
         const dateKey = Object.keys(data.near_earth_objects)[0];
         const asteroids = data.near_earth_objects[dateKey];
+        const count = asteroids.length;
 
-        // nettoyage
-        asteroids3D.forEach(obj => scene.remove(obj));
-        asteroids3D = [];
+        // update top panel (status)
+        statusPanel.innerHTML = `
+            <div>
+                <div>Data source: <a href="https://data.nasa.gov/dataset/asteroids-neows-api">NASA NeoWs</a></div>
+                <div>Asteroids detected: ${count}</div>
+            </div>
+        `;
+
+        // update bottom panel (instruction)
+        infoPanel.innerHTML = `
+            <div>
+                Click an object to scan
+            </div>
+        `;
+
+        asteroidsElems.forEach(obj => scene.remove(obj));
+        asteroidsElems = [];
 
         asteroids.forEach(asteroid => {
-            const div = document.createElement('div');
-            div.className = 'asteroid-item';
-            
-            let cleanName = asteroid.name.replace('(', '').replace(')', '');
-            
-            if (asteroid.is_potentially_hazardous_asteroid) {
-                div.classList.add('danger-block');
-                cleanName = '[Warning] ' + cleanName;
-            }
-
-            const size = Math.round(asteroid.estimated_diameter.meters.estimated_diameter_max); 
-            const dist = Math.round(asteroid.close_approach_data[0].miss_distance.kilometers);
-
-            div.innerHTML = `
-                <div class="asteroid-name">${cleanName}</div>
-                <div>Size: ${size} meters</div>
-                <div>Distance: ${dist} kilometers</div>
-            `;
-            list.appendChild(div);                
             createAsteroid3D(asteroid); 
         });
 
     } catch (error) {
-        console.error(error);
-        list.innerHTML = "Error loading data.";
+        statusPanel.innerHTML = `<div>Error loading data</div>`;
     }
 }
 
+// preparing calendar
+function setupDatePicker() {
+    const dateInput = document.getElementById('date-picker');
+    
+    // date is today by default
+    const today = new Date().toISOString().split('T')[0];
+    dateInput.value = today;
+
+    // when user changes date
+    dateInput.addEventListener('change', (event) => {
+        const newDate = event.target.value;
+        // updating data
+        fetchAsteroidData(newDate);
+    });
+}
+
 init();
+setupDatePicker();
 fetchAsteroidData();
 animate();
