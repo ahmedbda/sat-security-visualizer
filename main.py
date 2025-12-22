@@ -10,6 +10,8 @@ import os
 from dotenv import load_dotenv
 from datetime import datetime
 
+from typing import Optional # optional date
+
 app = FastAPI()
 
 load_dotenv() # loads .env (api key) needed since this project will be open source on github
@@ -21,15 +23,17 @@ def main_site():
     return FileResponse("static/index.html")
 
 @app.get("/asteroids")
-def get_asteroids_data():
+def get_asteroids_data(date: Optional[str] = None):
     # timestamps calculation
-    today = datetime.now().strftime("%Y-%m-%d")
+    if date:
+        target_date = date
+    else:
+        target_date = datetime.now().strftime("%Y-%m-%d")
     
     # request url (separated for readability) 
-    url = f"https://api.nasa.gov/neo/rest/v1/feed?start_date={today}&end_date={today}&api_key={api_key}"
+    url = f"https://api.nasa.gov/neo/rest/v1/feed?start_date={target_date}&end_date={target_date}&api_key={api_key}"
 
-
-    # api request for today and extracting the json from it in data
+    # api request for date and extracting the json from it in data
     data = requests.get(url).json()
 
     # removing api key from top level links for security purposes
